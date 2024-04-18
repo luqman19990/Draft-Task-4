@@ -1,7 +1,7 @@
 var selectedAppointmentID;
 
 $(document).ready(function () {
-   // on-click button for inserting appointments
+    // on-click button for inserting appointments
     $('#submit-btn').click(function () {
         if (!validateEmail($('#Email').val())) {
             alert("Enter a valid email address.");
@@ -9,6 +9,17 @@ $(document).ready(function () {
         }
         insertAppt();
     });
+
+    // on-click button for deleting appointments
+    $('#delete-btn').click(function () {
+        var appointmentID = $('#DeleteAppointmentID').val();
+        if (!validateID(appointmentID)) {
+            alert("Enter a valid appointment ID.");
+            return;
+        }
+        deleteAppointment();
+    });
+
     // on-click button for updating appointments
     $('#update-btn').click(function () {
         if (!validateEmail($('#Email').val())) {
@@ -42,29 +53,12 @@ $(document).ready(function () {
         
     });
     
-    // Add click event listener for delete buttons
     $('#appointmentTable tbody').on('click', '.delete-btn', function () {
-        var row = $(this).closest('tr');
-        var data = table.row(row).data();
-        var appointmentID = data[0]; // Assuming AppointmentID is in the first column
-        // Perform deletion action here, for example, an AJAX call
-        $.ajax({
-            type: 'POST',
-            url: 'svltaction?tc=SP_DELETE_APPOINTMENT',
-            data: { appointmentID: appointmentID },
-            success: function(response) {
-                // If deletion is successful, remove the row from the DataTable
-                table.row(row).remove().draw();
-                alert('Appointment deleted successfully!');
-            },
-            error: function(xhr, status, error) {
-                console.error(xhr.responseText);
-                alert('Error deleting appointment. Please try again later.');
-            }
-        });
-    });
-    
+        var data = $('#appointmentTable').DataTable().row($(this).parents('tr')).data();
+        var appointmentID = data[0];
 
+        deleteAppointment(appointmentID);
+    });
 });
 
 // Function to insert appointment
@@ -96,7 +90,21 @@ function insertAppt() {
     });
 }
 
-
+// Function to delete appointment
+function deleteAppointment(appointmentID) {
+    $.ajax({
+        type: 'POST',
+        url: 'svltaction?tc=SP_DELETE_APPOINTMENT',
+        data: { 
+            AppointmentID: appointmentID 
+        },
+        success: function(resp) {
+            alert("Appointment deleted successfully!");
+            // Reload the DataTable after deletion
+            $('#appointmentTable').DataTable().ajax.reload();
+        }
+    });
+}
 
 // Function to update appointment
 function updateAppt() {
@@ -155,7 +163,12 @@ function viewApptNew(name, gender) {
             { "title": "Gender" },
             { "title": "AppointmentDate" },
             { "title": "Email" },
-
+            // Add a new column for the delete button
+            {
+                "title": "Action",
+                "data": null,
+                "defaultContent": "<button class='btn btn-danger delete-btn'>Delete</button>"
+            }
         ],
         "initComplete": function(settings, json) {
             alert("Appointments loaded successfully!");
